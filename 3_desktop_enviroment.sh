@@ -364,6 +364,12 @@ install_pencil2d() {
     install_if_missing "pencil2d"
 }
 
+# Pencil2D
+install_libresprite() {
+    print_header "LibreSprite installieren"
+    install_if_missing "libresprite"
+}
+
 # OpenToonz
 install_opentoonz() {
     print_header "OpenToonz installieren"
@@ -564,6 +570,7 @@ main() {
     install_intellij
     install_godot
     install_pencil2d
+    install_libresprite
     install_opentoonz
     install_synfig
     install_vlc
