@@ -482,27 +482,32 @@ EOF
     #     RUBY GEM PATH
     ##############################
     if command_exists ruby; then
-        local ruby_version=$(ruby -e 'puts RUBY_VERSION')
-        if ! grep -q ".gem/ruby" "$env_file" 2>/dev/null; then
+        # Ruby-Version normalisieren zu X.Y.0
+        local ruby_version=$(ruby -e 'v=RUBY_VERSION.split("."); puts "#{v[0]}.#{v[1]}.0"')
+
+        if ! grep -q ".local/share/gem/ruby" "$env_file" 2>/dev/null; then
             print_info "Füge Ruby Gems PATH (User + System) zu Nushell hinzu..."
             cat >> "$env_file" << EOF
 
-# Ruby Gems Path
-# User Gems
-$user_ruby_bin = $"($env.HOME)/.gem/ruby/${ruby_version}/bin"
-if ! ($env.PATH | split row (char esep) | contains $user_ruby_bin) {
-    $env.PATH = ($env.PATH | split row (char esep) | prepend $user_ruby_bin)
+# Ruby Gems Path (USER)
+# Normalisierte Ruby-Version: ${ruby_version}
+
+\$user_ruby_bin = "\$env.HOME/.local/share/gem/ruby/${ruby_version}/bin"
+if ! (\$env.PATH | split row (char esep) | contains \$user_ruby_bin) {
+    \$env.PATH = (\$env.PATH | split row (char esep) | prepend \$user_ruby_bin)
 }
 
-# System Gems (falls vorhanden)
-$system_ruby_bin = "/usr/bin"
-if ! ($env.PATH | split row (char esep) | contains $system_ruby_bin) {
-    $env.PATH = ($env.PATH | split row (char esep) | prepend $system_ruby_bin)
+# Ruby System-Gems (Fallback)
+/usr/bin | into string | let system_ruby_bin
+if ! (\$env.PATH | split row (char esep) | contains \$system_ruby_bin) {
+    \$env.PATH = (\$env.PATH | split row (char esep) | prepend \$system_ruby_bin)
 }
+
 EOF
             print_success "Ruby Gem PATHs hinzugefügt"
         fi
     fi
+
 
     ##############################
     #  PYTHON PATHS (User + System + pipx)
@@ -636,23 +641,26 @@ EOF
     # Ruby PATHs (User + System)
     ##############################
     if command_exists ruby; then
-        local ruby_version=$(ruby -e 'puts RUBY_VERSION')
-        if ! grep -q ".gem/ruby" "$zshrc" 2>/dev/null; then
+        # Ruby-Version normalisieren zu X.Y.0
+        local ruby_version=$(ruby -e 'v=RUBY_VERSION.split("."); puts "#{v[0]}.#{v[1]}.0"')
+
+        if ! grep -q ".local/share/gem/ruby" "$zshrc" 2>/dev/null; then
             print_info "Füge Ruby PATHs zu .zshrc hinzu..."
             cat >> "$zshrc" << EOF
 
-# Ruby Gems Path
-# User Gems
-user_ruby_bin="\$HOME/.gem/ruby/${ruby_version}/bin"
-[[ ":$PATH:" != *":\$user_ruby_bin:"* ]] && PATH="\$user_ruby_bin:\$PATH"
+# Ruby Gems Path (User)
+user_ruby_bin="\$HOME/.local/share/gem/ruby/${ruby_version}/bin"
+[[ ":\$PATH:" != *":\$user_ruby_bin:"* ]] && PATH="\$user_ruby_bin:\$PATH"
 
 # System Gems
 system_ruby_bin="/usr/bin"
-[[ ":$PATH:" != *":\$system_ruby_bin:"* ]] && PATH="\$system_ruby_bin:\$PATH"
+[[ ":\$PATH:" != *":\$system_ruby_bin:"* ]] && PATH="\$system_ruby_bin:\$PATH"
+
 EOF
             print_success "Ruby PATHs hinzugefügt"
         fi
     fi
+
 
     ##############################
     # Python PATHs (User + System + pipx)
@@ -737,23 +745,26 @@ EOF
     # Ruby PATHs (User + System)
     ##############################
     if command_exists ruby; then
-        local ruby_version=$(ruby -e 'puts RUBY_VERSION')
-        if ! grep -q ".gem/ruby" "$bashrc" 2>/dev/null; then
+        # Ruby-Version normalisieren zu X.Y.0
+        local ruby_version=$(ruby -e 'v=RUBY_VERSION.split("."); puts "#{v[0]}.#{v[1]}.0"')
+
+        if ! grep -q ".local/share/gem/ruby" "$bashrc" 2>/dev/null; then
             print_info "Füge Ruby PATHs zu .bashrc hinzu..."
             cat >> "$bashrc" << EOF
 
-# Ruby Gems Path
-# User Gems
-user_ruby_bin="\$HOME/.gem/ruby/${ruby_version}/bin"
+# Ruby Gems Path (User)
+user_ruby_bin="\$HOME/.local/share/gem/ruby/${ruby_version}/bin"
 [[ ":\$PATH:" != *":\$user_ruby_bin:"* ]] && export PATH="\$user_ruby_bin:\$PATH"
 
 # System Gems
 system_ruby_bin="/usr/bin"
 [[ ":\$PATH:" != *":\$system_ruby_bin:"* ]] && export PATH="\$system_ruby_bin:\$PATH"
+
 EOF
             print_success "Ruby PATHs hinzugefügt"
         fi
     fi
+
 
     ##############################
     # Python PATHs (User + System + pipx)
