@@ -664,6 +664,36 @@ install_brave() {
     print_info "Starten mit: brave"
 }
 
+install_kolourpaint() {
+    print_header "KolourPaint installieren"
+
+    # Prüfen, ob KolourPaint im Repo verfügbar ist
+    if pacman -Ss "^kolourpaint$" &>/dev/null; then
+        install_if_missing "kolourpaint"
+        print_success "kolourpaint aus offiziellen Repos installiert"
+    else
+        print_warning "kolourpaint nicht in offiziellen Repos gefunden"
+        print_info "Du kannst evtl. die AUR-Version (kolourpaint-git) ausprobieren"
+        return
+    fi
+
+#     # Optionale Abhängigkeiten / Empfehlungen
+#     local optional_deps=(
+#         "breeze-icons"     # Icon‑Thema für bessere Icons (Qt/KDE Apps)
+#         "qt5ct"            # Qt‑Konfiguration / Theme-Unterstützung (optional)
+#     )
+#
+#     print_info "Prüfe optionale Pakete für bessere Integration..."
+#     for dep in "${optional_deps[@]}"; do
+#         if pacman -Ss "^${dep}$" &>/dev/null; then
+#             install_if_missing "$dep"
+#         fi
+#     done
+
+    print_success "KolourPaint installiert"
+    print_info "Starte mit: kolourpaint"
+}
+
 # Zusammenfassung
 print_summary() {
     print_header "Installation abgeschlossen!"
@@ -680,6 +710,7 @@ print_summary() {
     echo "    - Krita"
     echo "    - Inkscape"
     echo "    - Blender"
+    echo "    - KolourPaint"
     echo ""
     echo "  🎬 Video & Animation:"
     echo "    - Kdenlive"
@@ -771,6 +802,7 @@ main() {
     install_lmms
     install_wireshark
     install_brave
+    install_kolourpaint
 
     # Zusammenfassung
     print_summary
