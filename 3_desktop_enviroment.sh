@@ -634,11 +634,6 @@ print_summary() {
     echo "    - virt-manager        # Optional: GUI für komplexeres VM-Management"
     echo "    - gnome-boxes         # GNOME Boxes selbst"
     echo ""
-    print_info "Hinweise:"
-    echo "  - Einige Pakete sind nur via AUR verfügbar"
-    echo "  - AUR Helper: yay -S <paket>"
-    echo "  - Hardware-Beschleunigung für Video: ggf. GPU-Treiber prüfen"
-    echo ""
 }
 
 # Hauptprogramm
@@ -682,10 +677,6 @@ main() {
     install_f3d
     install_kvm_virtualization
     install_gnome_boxes
-
-    # AUR Helper & Pakete (optional, falls benötigt)
-    # install_aur_helper
-    # install_aur_packages
 
     # Zusammenfassung
     print_summary
