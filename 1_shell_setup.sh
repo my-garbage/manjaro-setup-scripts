@@ -70,22 +70,35 @@ install_pyenv() {
     if pacman -Ss '^pyenv$' &>/dev/null; then
         install_if_missing "pyenv"
         print_success "pyenv aus Manjaro Repo installiert"
-        return
-    fi
-
-    # Fallback: Installation via Curl
-    if command_exists pyenv; then
+        # KEIN return!
+    elif command_exists pyenv; then
         print_success "pyenv bereits installiert"
-        return
+        # KEIN return!
+    else
+        print_warning "pyenv nicht in Repos gefunden, installiere aus GitHub..."
+        curl https://pyenv.run | bash
     fi
 
-    print_warning "pyenv nicht in Repos gefunden, installiere aus GitHub..."
-    curl https://pyenv.run | bash
-
-    # Temporär pyenv für diese Session laden
+    # Temporär pyenv für diese Session laden (IMMER!)
     export PYENV_ROOT="$HOME/.pyenv"
     export PATH="$PYENV_ROOT/bin:$PATH"
-    eval "$(pyenv init -)"
+    eval "$(pyenv init -)" 2>/dev/null || true
+
+    # pyenv-virtualenv Plugin via Git installieren (WIRD JETZT IMMER GEPRÜFT!)
+    local plugin_dir="$HOME/.pyenv/plugins/pyenv-virtualenv"
+    if [ ! -d "$plugin_dir" ]; then
+        print_info "pyenv-virtualenv Plugin nicht gefunden — installiere via Git..."
+        mkdir -p "$HOME/.pyenv/plugins"
+        git clone https://github.com/pyenv/pyenv-virtualenv.git "$plugin_dir"
+        if [ $? -eq 0 ]; then
+            print_success "pyenv-virtualenv Plugin erfolgreich installiert"
+        else
+            print_error "Fehler beim Klonen von pyenv-virtualenv"
+            return 1
+        fi
+    else
+        print_success "pyenv-virtualenv Plugin bereits vorhanden"
+    fi
 
     print_success "pyenv installiert"
 }
@@ -310,6 +323,8 @@ install_system_packages() {
         "curl"
         "tar"
         "unzip"
+        "perl"
+        "cpanminus"
     )
 
     for pkg in "${build_tools[@]}"; do
@@ -461,6 +476,7 @@ setup_path_nushell() {
 $env.PYENV_ROOT = $"($env.HOME)/.pyenv"
 # pyenv selbst setzt den PATH korrekt, daher kein manuelles Prepend nötig
 eval (pyenv init - | lines)
+eval "$(pyenv virtualenv-init -)"
 EOF
         print_success "pyenv Init hinzugefügt"
     fi
@@ -620,6 +636,7 @@ setup_path_zsh() {
 export PYENV_ROOT="$HOME/.pyenv"
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
 EOF
         print_success "pyenv Init hinzugefügt"
     fi
@@ -724,6 +741,7 @@ setup_path_bash() {
 export PYENV_ROOT="$HOME/.pyenv"
 [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
+eval "$(pyenv virtualenv-init -)"
 EOF
         print_success "pyenv Init hinzugefügt"
     fi

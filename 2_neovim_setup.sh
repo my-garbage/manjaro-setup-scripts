@@ -248,35 +248,78 @@ install_node_lsp_servers() {
 
 # Installiere Python LSP Tools (falls nicht via System-Paket)
 install_python_lsp_tools() {
-    print_header "Zusätzliche Python LSP Tools installieren"
+    print_header "Python LSP Tools & Neovim Python Provider installieren"
 
-    # Initialisiere pyenv
+    # ===============================
+    # PYENV initialisieren
+    # ===============================
     export PYENV_ROOT="$HOME/.pyenv"
     export PATH="$PYENV_ROOT/bin:$PATH"
     if command_exists pyenv; then
         eval "$(pyenv init -)"
-    fi
-
-    if ! command_exists python && ! command_exists python3; then
-        print_warning "Python nicht verfügbar!"
-        return
-    fi
-
-    local py_cmd="python"
-    if ! command_exists python; then
-        py_cmd="python3"
-    fi
-
-    # ruff-lsp (falls nicht via System-Paket installiert)
-    local tool="ruff-lsp"
-    if command_exists ruff-lsp || $py_cmd -m pip show "$tool" &>/dev/null; then
-        print_success "$tool bereits installiert"
+        eval "$(pyenv virtualenv-init -)"
     else
-        print_info "Installiere $tool..."
-        $py_cmd -m pip install --user "$tool"
-        print_success "$tool installiert"
+        print_warning "pyenv ist nicht installiert!"
+        return 1
     fi
+
+    # ===============================
+    # Python-Version setzen / installieren
+    # ===============================
+    local python_version="3.12.11"  # gewünschte Version
+
+    if ! pyenv versions --bare | grep -q "^${python_version}\$"; then
+        print_info "Installiere Python $python_version via pyenv..."
+        pyenv install "$python_version"
+    else
+        print_success "Python $python_version bereits installiert"
+    fi
+
+    # ===============================
+    # Virtualenv für Neovim erstellen
+    # ===============================
+    local venv_name="nvim"
+    if ! pyenv virtualenvs --bare | grep -q "^${python_version}/envs/${venv_name}\$"; then
+        print_info "Erstelle pyenv Virtualenv '$venv_name' für Neovim..."
+        pyenv virtualenv "$python_version" "$venv_name"
+    else
+        print_success "Virtualenv '$venv_name' existiert bereits"
+    fi
+
+    # Aktiviere Virtualenv
+    pyenv activate "$venv_name"
+
+    # ===============================
+    # pynvim installieren
+    # ===============================
+    if ! python -m pip show pynvim &>/dev/null; then
+        print_info "Installiere pynvim in Virtualenv '$venv_name'..."
+        python -m pip install --upgrade pip
+        python -m pip install pynvim
+        print_success "pynvim installiert"
+    else
+        print_success "pynvim bereits installiert"
+    fi
+
+    # ===============================
+    # LSP Tool: ruff-lsp
+    # ===============================
+    if ! python -m pip show ruff-lsp &>/dev/null; then
+        print_info "Installiere ruff-lsp..."
+        python -m pip install ruff-lsp
+        print_success "ruff-lsp installiert"
+    else
+        print_success "ruff-lsp bereits installiert"
+    fi
+
+    # ===============================
+    # Hinweis für Neovim
+    # ===============================
+    print_info "Setze in init.vim oder init.lua:"
+    echo "  let g:python3_host_prog = '$PYENV_ROOT/versions/$venv_name/bin/python'"
+    print_success "Python LSP Tools & Neovim Provider fertig eingerichtet"
 }
+
 
 # Installiere Ruby Gems
 install_ruby_gems() {
@@ -367,6 +410,21 @@ install_jdtls() {
 
     cd - > /dev/null
     print_success "JDTLS installiert in $jdtls_path"
+}
+
+# Installiere perl plugin
+install_perl_neovim_ext() {
+    print_header "Neovim Perl Provider installieren (Neovim::Ext)"
+
+    print_info "Installiere Neovim::Ext über cpanm..."
+    if cpanm --sudo --force Neovim::Ext; then
+        print_success "Neovim::Ext erfolgreich installiert"
+    else
+        print_warning "Neovim::Ext konnte nicht installiert werden – prüfe Build-Abhängigkeiten!"
+        return 1
+    fi
+
+    print_success "Perl Provider vollständig installiert"
 }
 
 # Installiere Lazy.nvim
@@ -627,6 +685,7 @@ main() {
     install_go_tools
     install_rust_analyzer
     install_jdtls
+    install_perl_neovim_ext
 
     # init.lua einrichten (mit Backup und Überschreiben)
     setup_init_lua

@@ -710,6 +710,7 @@ for type, icon in pairs(signs) do
               -- ==========================================
               --    PYTHON (PYRIGHT + RUFF)
               -- ==========================================
+              vim.g.python3_host_prog = os.getenv("HOME") .. "/.pyenv/versions/nvim/bin/python"
               lspconfig.pyright.setup({
                 capabilities = capabilities,
                 on_attach = on_attach,
