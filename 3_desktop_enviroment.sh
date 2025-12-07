@@ -632,6 +632,38 @@ install_lmms() {
     print_info "Beim ersten Start: Audio‑Interface und ggf. Soundfont konfigurieren"
 }
 
+install_wireshark() {
+    print_header "Wireshark installieren"
+
+    # Installiere Wireshark GUI
+    if pacman -Ss "^wireshark-qt$" &>/dev/null; then
+        install_if_missing "wireshark-qt"
+    else
+        print_warning "wireshark-qt nicht in Repos gefunden — versuche wireshark-cli"
+        install_if_missing "wireshark-cli"
+    fi
+
+    # Prüfe ob dumpcap mit passenden Rechten läuft
+    print_info "Setze Berechtigungen für dumpcap..."
+    sudo setcap cap_net_raw,cap_net_admin+eip /usr/bin/dumpcap
+
+    # Füge Benutzer zur wireshark-Gruppe hinzu (ermöglicht Packet Capture ohne root)
+    sudo usermod -aG wireshark "$USER"
+
+    print_success "Wireshark installiert."
+    print_info "Danach bitte abmelden / neu einloggen, damit Gruppenrechte greifen."
+    print_info "Starte Wireshark mit: wireshark"
+}
+
+install_brave() {
+    print_header "Brave installieren"
+
+    install_if_missing "brave"
+
+    print_success "Brave installiert"
+    print_info "Starten mit: brave"
+}
+
 # Zusammenfassung
 print_summary() {
     print_header "Installation abgeschlossen!"
@@ -678,6 +710,8 @@ print_summary() {
     echo ""
     echo "  🔒 Sicherheit:"
     echo "    - Tor Browser"
+    echo "    - Brave"
+    echo "    - Wireshark"
     echo ""
     echo "  🖥️ Virtualisierung & GNOME Boxes:"
     echo "    - qemu-desktop        # QEMU mit Desktop/VM-Support (wird von GNOME Boxes benötigt)"
@@ -735,6 +769,8 @@ main() {
     install_gnome_boxes
     install_okteta
     install_lmms
+    install_wireshark
+    install_brave
 
     # Zusammenfassung
     print_summary
