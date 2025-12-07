@@ -401,6 +401,7 @@ install_system_packages() {
         "eza"
         "tmux"
         "ranger"
+        "yazi"
         "zoxide"
     )
 
@@ -960,6 +961,7 @@ main() {
     echo "  - eza:     Besseres ls"
     echo "  - tmux:    Terminal Multiplexer"
     echo "  - ranger:  Dateimanager"
+    echo "  - yazi:    Dateimanager"
     echo "  - jrnl:    Journaling Tool"
     echo ""
     print_info "Oh My Posh Theme:"
