@@ -578,6 +578,15 @@ install_gnome_boxes() {
     print_info "Starten mit: gnome-boxes"
 }
 
+install_okteta() {
+    print_header "Okteta (Hex-Editor) installieren"
+
+    install_if_missing "okteta"
+
+    print_success "Okteta installiert"
+    print_info "Starten mit: okteta"
+}
+
 # Zusammenfassung
 print_summary() {
     print_header "Installation abgeschlossen!"
@@ -612,6 +621,7 @@ print_summary() {
     echo "    - Zed"
     echo "    - IntelliJ IDEA Community"
     echo "    - Helix"
+    echo "    - Okteta"
     echo ""
     echo "  🎮 Game Development:"
     echo "    - Godot Engine"
@@ -677,6 +687,7 @@ main() {
     install_f3d
     install_kvm_virtualization
     install_gnome_boxes
+    install_okteta
 
     # Zusammenfassung
     print_summary
