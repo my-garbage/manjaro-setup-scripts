@@ -12,7 +12,7 @@ set -e  # Bei Fehler abbrechen
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
+BLUE='\033[1;36m'
 NC='\033[0m' # No Color
 
 # Helper-Funktionen
@@ -474,9 +474,7 @@ setup_path_nushell() {
 
 # pyenv
 $env.PYENV_ROOT = $"($env.HOME)/.pyenv"
-# pyenv selbst setzt den PATH korrekt, daher kein manuelles Prepend nötig
-eval (pyenv init - | lines)
-eval "$(pyenv virtualenv-init -)"
+$env.PATH = ($env.PATH | split row (char esep) | prepend $"($env.PYENV_ROOT)/bin")
 EOF
         print_success "pyenv Init hinzugefügt"
     fi
@@ -486,7 +484,7 @@ EOF
     ##############################
     if ! grep -q "go/bin" "$env_file" 2>/dev/null; then
         print_info "Füge Go PATH zu Nushell hinzu..."
-        cat >> "$env_file" << EOF
+        cat >> "$env_file" << 'EOF'
 
 # Go Path
 $env.PATH = ($env.PATH | split row (char esep) | prepend $"($env.HOME)/go/bin")
@@ -498,72 +496,37 @@ EOF
     #     RUBY GEM PATH
     ##############################
     if command_exists ruby; then
-        # Ruby-Version normalisieren zu X.Y.0
         local ruby_version=$(ruby -e 'v=RUBY_VERSION.split("."); puts "#{v[0]}.#{v[1]}.0"')
 
         if ! grep -q ".local/share/gem/ruby" "$env_file" 2>/dev/null; then
-            print_info "Füge Ruby Gems PATH (User + System) zu Nushell hinzu..."
+            print_info "Füge Ruby Gems PATH zu Nushell hinzu..."
             cat >> "$env_file" << EOF
 
-# Ruby Gems Path (USER)
-# Normalisierte Ruby-Version: ${ruby_version}
-
-\$user_ruby_bin = "\$env.HOME/.local/share/gem/ruby/${ruby_version}/bin"
-if ! (\$env.PATH | split row (char esep) | contains \$user_ruby_bin) {
-    \$env.PATH = (\$env.PATH | split row (char esep) | prepend \$user_ruby_bin)
-}
-
-# Ruby System-Gems (Fallback)
-/usr/bin | into string | let system_ruby_bin
-if ! (\$env.PATH | split row (char esep) | contains \$system_ruby_bin) {
-    \$env.PATH = (\$env.PATH | split row (char esep) | prepend \$system_ruby_bin)
-}
-
+# Ruby Gems Path (USER + System)
+\$env.PATH = (\$env.PATH | split row (char esep) | prepend \$"(\$env.HOME)/.local/share/gem/ruby/${ruby_version}/bin")
 EOF
-            print_success "Ruby Gem PATHs hinzugefügt"
+            print_success "Ruby Gem PATH hinzugefügt"
         fi
     fi
 
-
     ##############################
-    #  PYTHON PATHS (User + System + pipx)
+    #  PYTHON PATHS (User + pipx)
     ##############################
-    if ! grep -q "Python PATHs" "$env_file" 2>/dev/null; then
-        print_info "Füge Python PATHs zu Nushell hinzu..."
+    if ! grep -q "Python.*PATH" "$env_file" 2>/dev/null; then
+        print_info "Füge Python User PATH zu Nushell hinzu..."
         cat >> "$env_file" << 'EOF'
 
-# Python PATHs
-# User pip --user / pipx
-$user_python_bin = $"($env.HOME)/.local/bin"
-if ! ($env.PATH | split row (char esep) | contains $user_python_bin) {
-    $env.PATH = ($env.PATH | split row (char esep) | prepend $user_python_bin)
-}
-
-# System Python
-$system_python_bin = "/usr/bin"
-if ! ($env.PATH | split row (char esep) | contains $system_python_bin) {
-    $env.PATH = ($env.PATH | split row (char esep) | prepend $system_python_bin)
-}
+# Python User Path (pipx)
+$env.PATH = ($env.PATH | split row (char esep) | prepend $"($env.HOME)/.local/bin")
 EOF
-        print_success "Python PATHs hinzugefügt"
+        print_success "Python User PATH hinzugefügt"
     fi
 
     ##############################
-    # Sourcen von env.nu
-    ##############################
-    if ! grep -Fxq "source ~/.config/nushell/env.nu" "$config_file"; then
-        print_info "Füge env.nu Source zu config.nu hinzu..."
-        echo "" >> "$config_file"
-        echo "source ~/.config/nushell/env.nu" >> "$config_file"
-        print_success "env.nu in config.nu eingebunden"
-    fi
-
-    ##############################
-    # ZOXIDE (Nu + Zsh)
+    # ZOXIDE
     ##############################
     if command_exists zoxide; then
         # Nushell
-        local nu_zoxide_file="$nu_dir/zoxide.nu"
         print_info "Erzeuge zoxide Init-Datei für Nushell..."
         nu -c 'zoxide init nushell | save -f "~/.config/nushell/zoxide.nu"'
 
@@ -572,29 +535,15 @@ EOF
             echo "source ~/.config/nushell/zoxide.nu" >> "$config_file"
             print_success "Zoxide für Nushell konfiguriert"
         fi
-
-        # Zsh
-        if command_exists zsh; then
-            local zoxide_zsh_file="$HOME/.zoxide.zsh"
-            local zshrc_file="$HOME/.zshrc"
-            print_info "Erzeuge zoxide Init-Datei für Zsh..."
-            zoxide init zsh > "$zoxide_zsh_file"
-
-            if ! grep -Fxq "source ~/.zoxide.zsh" "$zshrc_file" 2>/dev/null; then
-                echo "" >> "$zshrc_file"
-                echo "source ~/.zoxide.zsh" >> "$zshrc_file"
-                print_success "Zoxide erfolgreich für Zsh konfiguriert"
-            fi
-        fi
     fi
 
     ##############################
     # Oh My Posh
     ##############################
     if command_exists oh-my-posh; then
-        if ! grep -q "oh-my-posh init" "$config_file"; then
+        if ! grep -q "oh-my-posh init" "$config_file" 2>/dev/null; then
             print_info "Konfiguriere Oh My Posh für Nushell..."
-            cat >> "$config_file" << EOF
+            cat >> "$config_file" << 'EOF'
 
 # Oh My Posh Prompt
 oh-my-posh init nu --config ~/.poshthemes/atomic.omp.json
@@ -607,10 +556,8 @@ EOF
     # VERIFIZIERUNG
     ##############################
     print_info "Verifiziere Nushell Konfiguration..."
-    verify_path_in_file "$env_file" "pyenv init" "pyenv"
+    verify_path_in_file "$env_file" "PYENV_ROOT" "pyenv"
     verify_path_in_file "$env_file" "go/bin" "Go PATH"
-    verify_path_in_file "$env_file" ".gem/ruby" "Ruby PATH"
-    verify_path_in_file "$env_file" ".local/bin" "Python User PATH"
     verify_path_in_file "$config_file" "oh-my-posh init" "Oh My Posh"
 }
 
@@ -702,14 +649,17 @@ EOF
     # Zoxide
     ##############################
     if command_exists zoxide; then
-        if ! grep -q "eval.*zoxide" "$zshrc" 2>/dev/null; then
-            print_info "Konfiguriere zoxide für Zsh..."
-            cat >> "$zshrc" << 'EOF'
+        if command_exists zsh; then
+            local zoxide_zsh_file="$HOME/.zoxide.zsh"
+            local zshrc_file="$HOME/.zshrc"
+            print_info "Erzeuge zoxide Init-Datei für Zsh..."
+            zoxide init zsh > "$zoxide_zsh_file"
 
-# Zoxide (Smart cd)
-eval "$(zoxide init zsh)"
-EOF
-            print_success "Zoxide konfiguriert"
+            if ! grep -Fxq "source ~/.zoxide.zsh" "$zshrc_file" 2>/dev/null; then
+                echo "" >> "$zshrc_file"
+                echo "source ~/.zoxide.zsh" >> "$zshrc_file"
+                print_success "Zoxide erfolgreich für Zsh konfiguriert"
+            fi
         fi
     fi
 
