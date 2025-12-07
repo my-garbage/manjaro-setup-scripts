@@ -587,6 +587,51 @@ install_okteta() {
     print_info "Starten mit: okteta"
 }
 
+install_lmms() {
+    print_header "LMMS installieren (DAW für Musikproduktion)"
+
+    # Prüfen, ob lmms verfügbar ist
+    if pacman -Ss "^lmms$" &>/dev/null; then
+        install_if_missing "lmms"
+        print_success "lmms installiert"
+    else
+        print_warning "lmms nicht in Repos gefunden"
+        print_info "Versuche Installation über AUR: yay -S lmms‑git"
+        return
+    fi
+
+    # Empfohlene Audio‑Dependencies
+    local audio_deps=(
+        "fluidsynth"    # MIDI / Soundfont‑Synthesizer
+        "timidity"      # Alternative für Soundfont / MIDI
+        "sndio"         # Audio Backend (falls nötig)
+    )
+
+    print_info "Installiere empfohlene Audio‑Dependencies..."
+    for dep in "${audio_deps[@]}"; do
+        if pacman -Ss "^${dep}$" &>/dev/null; then
+            install_if_missing "$dep"
+        fi
+    done
+
+    # Optionale Tools / Soundfont‑Support
+    local optional_deps=(
+        "soundfont-fluid"  # Soundfont Sample‑Bank (General MIDI)
+        "qsynth"           # GUI‑Frontend für FluidSynth
+    )
+
+    print_info "Installiere optionale Pakete für bessere Sound‑Erfahrung..."
+    for dep in "${optional_deps[@]}"; do
+        if pacman -Ss "^${dep}$" &>/recorder/=/dev/null; then
+            install_if_missing "$dep"
+        fi
+    done
+
+    print_success "LMMS & Abhängigkeiten installiert"
+    print_info "Starte LMMS mit: lmms"
+    print_info "Beim ersten Start: Audio‑Interface und ggf. Soundfont konfigurieren"
+}
+
 # Zusammenfassung
 print_summary() {
     print_header "Installation abgeschlossen!"
@@ -615,6 +660,7 @@ print_summary() {
     echo "    - Ardour"
     echo "    - Audacity"
     echo "    - Tenacity"
+    echo "    - LMMS"
     echo ""
     echo "  💻 Entwicklung:"
     echo "    - VS Code"
@@ -688,6 +734,7 @@ main() {
     install_kvm_virtualization
     install_gnome_boxes
     install_okteta
+    install_lmms
 
     # Zusammenfassung
     print_summary
