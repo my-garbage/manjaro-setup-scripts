@@ -487,6 +487,97 @@ install_f3d() {
     fi
 }
 
+install_kvm_virtualization() {
+    print_header "KVM / QEMU + libvirt + Virtualisierung Setup"
+
+    # Grundpakete für Virtualisierung
+    local pkgs=(
+        "qemu-full"          # Manjaro verwendet qemu-full statt qemu-desktop
+        "libvirt"            # libvirt Daemon / API
+        "edk2-ovmf"          # UEFI/OVMF Firmware für VMs
+        "dnsmasq"            # Netzwerk / DHCP für VMs
+#        "iptables-nft"       # Firewall / NAT Support
+        "bridge-utils"       # Bridge-Utilities
+        "virt-viewer"        # Viewer für VMs
+        "virt-manager"       # GUI-Tool für VM-Management
+        "dmidecode"          # Hardware-Erkennung für libvirt
+    )
+
+    print_info "Installiere Virtualisierungs-Pakete..."
+    for pkg in "${pkgs[@]}"; do
+        install_if_missing "$pkg"
+    done
+
+    # Optional: TPM Support (für Windows 11 VMs)
+    local tpm_pkg="swtpm"
+    if pacman -Ss "^${tpm_pkg}$" &>/dev/null; then
+        print_info "Installiere optionales TPM-Paket $tpm_pkg..."
+        install_if_missing "$tpm_pkg"
+    fi
+
+    # libvirt Default Network Config
+    print_info "Konfiguriere libvirt Default Network..."
+    sudo mkdir -p /etc/libvirt
+
+    # Dienste aktivieren
+    print_info "Aktiviere libvirt Services..."
+    sudo systemctl enable --now libvirtd.service
+    sudo systemctl enable --now virtlogd.service
+
+    # Gruppenrechte setzen
+    print_info "Füge Benutzer '$USER' zur libvirt-Gruppe hinzu..."
+    sudo usermod -aG libvirt "$USER"
+
+    # Prüfe ob kvm verfügbar ist
+    if [ -e /dev/kvm ]; then
+        print_success "KVM-Modul verfügbar (/dev/kvm existiert)"
+        sudo usermod -aG kvm "$USER"
+    else
+        print_warning "KVM-Modul nicht gefunden!"
+        print_info "Prüfe ob Virtualisierung im BIOS aktiviert ist"
+        print_info "Intel: VT-x aktivieren | AMD: AMD-V aktivieren"
+    fi
+
+    # libvirt Default Network starten
+    print_info "Starte libvirt Default Network..."
+    sudo virsh net-autostart default 2>/dev/null || true
+    sudo virsh net-start default 2>/dev/null || true
+
+    print_success "KVM/QEMU/libvirt installiert"
+    print_warning "⚠ Wichtig: Bitte abmelden und neu einloggen, damit Gruppenrechte greifen!"
+    print_info "Test nach Neulogin: virsh list --all"
+}
+
+install_gnome_boxes() {
+    print_header "GNOME Boxes installieren"
+
+    # Prüfe ob KVM/libvirt installiert ist
+    if ! is_installed "libvirt"; then
+        print_warning "libvirt ist nicht installiert!"
+        print_info "Installiere zuerst KVM-Virtualisierung"
+        install_kvm_virtualization
+    fi
+
+    # GNOME Boxes installieren
+    install_if_missing "gnome-boxes"
+
+    # Zusätzliche Dependencies für GNOME Boxes
+    local optional_deps=(
+        "tracker3"           # Datei-Indexierung
+        "libosinfo"          # OS-Erkennung
+        "gtksourceview5"     # Syntax Highlighting
+    )
+
+    for dep in "${optional_deps[@]}"; do
+        if pacman -Ss "^${dep}$" &>/dev/null; then
+            install_if_missing "$dep"
+        fi
+    done
+
+    print_success "GNOME Boxes installiert"
+    print_info "Starten mit: gnome-boxes"
+}
+
 # Zusammenfassung
 print_summary() {
     print_header "Installation abgeschlossen!"
@@ -531,6 +622,17 @@ print_summary() {
     echo ""
     echo "  🔒 Sicherheit:"
     echo "    - Tor Browser"
+    echo ""
+    echo "  🖥️ Virtualisierung & GNOME Boxes:"
+    echo "    - qemu-desktop        # QEMU mit Desktop/VM-Support (wird von GNOME Boxes benötigt)"
+    echo "    - libvirt             # Virtualisierungs-Backend"
+    echo "    - edk2-ovmf           # UEFI/OVMF Firmware für VMs"
+    echo "    - dnsmasq             # Netzwerk & DHCP für VMs"
+    echo "    - iptables-nft        # Firewall / NAT Support für VMs"
+    echo "    - bridge-utils        # Bridge-Netzwerk Tools (optional, für Bridge-Netzwerke)"
+    echo "    - virt-viewer         # Optionaler VM-Viewer"
+    echo "    - virt-manager        # Optional: GUI für komplexeres VM-Management"
+    echo "    - gnome-boxes         # GNOME Boxes selbst"
     echo ""
     print_info "Hinweise:"
     echo "  - Einige Pakete sind nur via AUR verfügbar"
@@ -578,6 +680,8 @@ main() {
     install_obs
     install_helix
     install_f3d
+    install_kvm_virtualization
+    install_gnome_boxes
 
     # AUR Helper & Pakete (optional, falls benötigt)
     # install_aur_helper
