@@ -778,6 +778,85 @@ EOF
     verify_path_in_file "$bashrc" ".local/bin" "Python User PATH"
 }
 
+#Tmux Setup
+# tmux + TPM Setup
+setup_tmux() {
+    print_header "tmux + TPM (Plugin Manager) installieren"
+
+    # Prüfen, ob tmux installiert ist
+    if ! command_exists tmux; then
+        print_warning "tmux nicht gefunden — bitte zuerst tmux installieren"
+        return 1
+    fi
+
+    # Verzeichnis für Plugins vorbereiten
+    local tpm_dir="$HOME/.tmux/plugins/tpm"
+    if [ ! -d "$tpm_dir" ]; then
+        print_info "Klonen von tmux-plugin-manager (TPM)..."
+        git clone https://github.com/tmux-plugins/tpm.git "$tpm_dir"
+        if [ $? -ne 0 ]; then
+            print_error "Fehler beim Klonen von TPM"
+            return 1
+        fi
+        print_success "TPM geklont"
+    else
+        print_info "TPM bereits vorhanden"
+    fi
+
+    # tmux Config anpassen: ~/.tmux.conf oder $XDG_CONFIG_HOME/tmux/tmux.conf
+    local tmux_conf_file="$HOME/.tmux.conf"
+    [ -n "$XDG_CONFIG_HOME" ] && tmux_conf_file="$XDG_CONFIG_HOME/tmux/tmux.conf"
+    mkdir -p "$(dirname "$tmux_conf_file")"
+    if [ ! -f "$tmux_conf_file" ]; then
+        touch "$tmux_conf_file"
+    fi
+
+    # Sicherstellen, dass die TPM-Einträge nicht doppelt sind
+    if ! grep -q "tmux-plugins/tpm" "$tmux_conf_file"; then
+        print_info "Füge TPM-Konfiguration zu $tmux_conf_file hinzu..."
+        cat >> "$tmux_conf_file" << 'EOF'
+# Terminal settings into tmux
+set-option -sa terminal-overrides "xterm*:Tc"
+
+# Enable mouse support
+set -g mouse on
+
+# Start Windows and panes at 1 instead of 0
+set -g base-index 1
+set -g base-pane-index 1
+set-window-option -g pane-base-index 1
+set-option -g renumber-windows on
+
+# Opens panes in the current directory
+bind '"' split-window -v -c "#{pane_current_path}"
+bind % split-window -h -c "#{pane_current_path}"
+
+# —— TPM (Tmux Plugin Manager) ——
+set -g @plugin 'tmux-plugins/tpm'
+
+set -g @plugin 'tmux-plugins/tmux-sensible'
+
+# Themes
+# set -g @plugin 'catppucin/tmux'
+set -g @plugin 'dreamsofcode-io/catppucin-tmux'
+
+# Yank enables to cpy with Y-key
+set -g @plugin 'tmux-plugins/tmux-yank'
+
+# Weitere Plugins hier hinzufügen, z. B.:
+# set -g @plugin 'github_user/plugin_name'
+
+# TPM initialisieren — immer am Ende der Config
+run '~/.tmux/plugins/tpm/tpm'
+EOF
+        print_success "TPM-Konfiguration hinzugefügt"
+    else
+        print_info "TPM-Einträge bereits in tmux.conf vorhanden"
+    fi
+
+    print_success "setup_tmux abgeschlossen — starte tmux und drücke <prefix> + I um Plugins zu installieren"
+}
+
 
 # Verifiziere Installationen
 verify_installations() {
@@ -912,6 +991,8 @@ main() {
     setup_path_bash
     setup_path_zsh
     setup_path_nushell
+
+    setup_tmux
 
     # Verifiziere
     verify_installations
