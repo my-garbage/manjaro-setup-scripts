@@ -372,6 +372,11 @@ install_system_packages() {
     # Go
     install_if_missing "go"
 
+    # C#
+    install_if_missing "dotnet-sdk"
+    install_if_missing "aspnet-runtime"  # optional, falls du Webentwicklung willst
+    install_if_missing "dotnet-runtime"   # optional, falls du nur .NET Apps laufen lassen willst
+
     # 7. Java Setup
     setup_java
 
