@@ -427,6 +427,9 @@ install_system_packages() {
 
     # 12. Oh My Posh (bevorzugt aus Repo)
     install_oh_my_posh
+
+    # LuaRocks
+    install_if_missing "luarocks"
 }
 
 # Verifiziere PATH Eintrag
@@ -778,7 +781,6 @@ EOF
     verify_path_in_file "$bashrc" ".local/bin" "Python User PATH"
 }
 
-#Tmux Setup
 # tmux + TPM Setup
 setup_tmux() {
     print_header "tmux + TPM (Plugin Manager) installieren"
