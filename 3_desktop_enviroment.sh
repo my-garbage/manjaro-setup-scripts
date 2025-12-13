@@ -658,7 +658,7 @@ install_wireshark() {
 install_brave() {
     print_header "Brave installieren"
 
-    install_if_missing "brave"
+    install_if_missing "brave-browser"
 
     print_success "Brave installiert"
     print_info "Starten mit: brave"
