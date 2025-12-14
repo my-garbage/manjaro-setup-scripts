@@ -59,6 +59,7 @@ DEPENDENCIES=(
     "nodejs"        # Für LSPs
     "npm"           # Für LSPs
     "python-pip"    # Für Python LSP
+    "lazygit"       # Für Git integration in NVIM
 )
 
 for dep in "${DEPENDENCIES[@]}"; do
