@@ -70,6 +70,13 @@ for dep in "${DEPENDENCIES[@]}"; do
     fi
 done
 
+# Schritt 2.1: npm Pakete installieren (typescript, jsregexp, usw.)
+echo -e "\n${BLUE}[2.1/4] Installiere npm-Pakete...${NC}"
+
+npm install -g typescript
+
+echo -e "${GREEN}✓ npm-Pakete erfolgreich installiert${NC}"
+
 # Schritt 3: Alte Config sichern und neue entpacken
 echo -e "\n${BLUE}[3/4] Entpacke NvChad Konfiguration...${NC}"
 
