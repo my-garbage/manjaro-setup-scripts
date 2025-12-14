@@ -822,22 +822,103 @@ setup_tmux() {
     if ! grep -q "tmux-plugins/tpm" "$tmux_conf_file"; then
         print_info "Füge TPM-Konfiguration zu $tmux_conf_file hinzu..."
         cat >> "$tmux_conf_file" << 'EOF'
-# Terminal settings into tmux
-set-option -sa terminal-overrides "xterm*:Tc"
+# ~/.tmux.conf
 
-# Enable mouse support
+# =============================================
+# Neovim Integration
+# =============================================
+
+# True Color Support
+set -g default-terminal "tmux-256color"
+set -ga terminal-overrides ",*256col*:Tc"
+
+# Neovim Escape-Delay fix (wichtig!)
+set -sg escape-time 10
+
+# Focus Events (für Neovim Auto-Reload)
+set -g focus-events on
+
+# =============================================
+# Vim-Tmux-Navigator (Smart Pane Switching)
+# =============================================
+is_vim="ps -o state= -o comm= -t '#{pane_tty}' \
+    | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|l?n?vim?x?|fzf)(diff)?$'"
+
+bind-key -n 'C-h' if-shell "$is_vim" 'send-keys C-h'  'select-pane -L'
+bind-key -n 'C-j' if-shell "$is_vim" 'send-keys C-j'  'select-pane -D'
+bind-key -n 'C-k' if-shell "$is_vim" 'send-keys C-k'  'select-pane -U'
+bind-key -n 'C-l' if-shell "$is_vim" 'send-keys C-l'  'select-pane -R'
+
+# Tmux Version < 3.0
+# bind-key -n 'C-\' if-shell "$is_vim" 'send-keys C-\\'  'select-pane -l'
+
+# Copy Mode Vim-Style
+bind-key -T copy-mode-vi 'C-h' select-pane -L
+bind-key -T copy-mode-vi 'C-j' select-pane -D
+bind-key -T copy-mode-vi 'C-k' select-pane -U
+bind-key -T copy-mode-vi 'C-l' select-pane -R
+# bind-key -T copy-mode-vi 'C-\' select-pane -l
+
+# =============================================
+# Vim-Style Copy Mode
+# =============================================
+setw -g mode-keys vi
+bind -T copy-mode-vi v send-keys -X begin-selection
+bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel 'xclip -in -selection clipboard'
+
+# =============================================
+# Bessere Prefix-Key (optional)
+# =============================================
+# Uncomment wenn du Ctrl-a statt Ctrl-b willst
+# unbind C-b
+# set -g prefix C-a
+# bind C-a send-prefix
+
+# =============================================
+# Pane Splitting (intuitiver)
+# =============================================
+bind | split-window -h -c "#{pane_current_path}"
+bind - split-window -v -c "#{pane_current_path}"
+
+# =============================================
+# Mouse Support
+# =============================================
 set -g mouse on
 
-# Start Windows and panes at 1 instead of 0
+# =============================================
+# Statusline (optional - schöner)
+# =============================================
+set -g status-position bottom
+set -g status-style 'bg=#1e1e2e fg=#cdd6f4'
+set -g status-left ''
+set -g status-right '#[fg=#f38ba8,bold] %H:%M '
+set -g status-right-length 50
+set -g status-left-length 20
+
+setw -g window-status-current-style 'fg=#1e1e2e bg=#89b4fa bold'
+setw -g window-status-current-format ' #I:#W#F '
+
+setw -g window-status-style 'fg=#cdd6f4'
+setw -g window-status-format ' #I:#W#F '
+
+# =============================================
+# Pane Borders
+# =============================================
+set -g pane-border-style 'fg=#313244'
+set -g pane-active-border-style 'fg=#89b4fa'
+
+# =============================================
+# Pane Index starting with 1
+# =============================================
+# Start Windows und Panes bei Index 1
 set -g base-index 1
-set -g base-pane-index 1
-set-window-option -g pane-base-index 1
+
+# Fenster beim Umbenennen automatisch neu nummerieren
 set-option -g renumber-windows on
 
-# Opens panes in the current directory
-bind '"' split-window -v -c "#{pane_current_path}"
-bind % split-window -h -c "#{pane_current_path}"
-
+# =============================================
+# Plugins
+# =============================================
 # —— TPM (Tmux Plugin Manager) ——
 set -g @plugin 'tmux-plugins/tpm'
 
@@ -845,16 +926,14 @@ set -g @plugin 'tmux-plugins/tmux-sensible'
 
 # Themes
 # set -g @plugin 'catppucin/tmux'
-set -g @plugin 'dreamsofcode-io/catppucin-tmux'
+set -g @plugin 'dreamsofcode-io/catppuccin-tmux'
 
 # Yank enables to cpy with Y-key
 set -g @plugin 'tmux-plugins/tmux-yank'
 
-# Weitere Plugins hier hinzufügen, z. B.:
-# set -g @plugin 'github_user/plugin_name'
-
 # TPM initialisieren — immer am Ende der Config
 run '~/.tmux/plugins/tpm/tpm'
+
 EOF
         print_success "TPM-Konfiguration hinzugefügt"
     else
